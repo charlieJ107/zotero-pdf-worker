@@ -1,5 +1,9 @@
 name: CI
-on: [ push, pull_request ]
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
 jobs:
   build:
     name: Build, Upload, Test
@@ -32,20 +36,9 @@ jobs:
           NODE_OPTIONS: --openssl-legacy-provider
 
       - name: Upload pre-build ZIP
-        if: |
-          env.ACT != 'true'
-          && github.repository == 'zotero/pdf-worker'
-          && github.event_name == 'push'
-          && (github.ref == 'refs/heads/master' || endsWith(github.ref, '-hotfix') || github.ref == 'refs/heads/gh-actions-ci-test')
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          cd build
-          mkdir build-zip
-          zip -r build-zip/$GITHUB_SHA.zip worker.js
-          sudo gem install --no-document dpl dpl-s3
-          dpl --provider=s3 --bucket=zotero-download --local-dir=build-zip --upload-dir=ci/client-pdf-worker --acl=public-read --skip_cleanup=true
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
+          npm publish --@charliej107:registry=https://npm.pkg.github.com
 
       - name: Run tests
         run: npm run test
